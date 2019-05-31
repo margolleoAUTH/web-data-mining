@@ -6,7 +6,10 @@ import credentials
 
 # Commnets for SK: 1/2 of June 2019
 #
-# (venv) C:\Users\Msi-PC\PycharmProjects\web-data-mining>git commit --author="margolleoAUTH <margolleo@csd.auth.com>"
+# git commit --author="margolleoAUTH <margolleo@csd.auth.com>"
+# git config --replace-all user.name "margolleoAUTH"
+# git config --replace-all user.email "margolleo@csd.auth.com"
+#
 # Marios:
 # Webosckets stin instostelida - We server
 # Semtiment Analysis me GoogleCharts
