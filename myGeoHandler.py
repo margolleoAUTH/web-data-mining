@@ -1,16 +1,21 @@
 from functools import partial
 from scipy.sparse import coo_matrix
 import gzip
-import logging
 import numpy
 import os
 import pickle
 
+# Handles the prediction of the geolocation of the tweet
+# This class performs the whole process to return the final result, including the pre-processing, transformations and
+# prediction of the geolocation. As a result we consider the coordinates and the country
+
 
 class MyGeoHandler:
 
+    # Constructor - Initiates the the appropriate instances regarding the pre-processing, transformations and prediction
+    # Given a directory, loads the saved (pickled and gzipped) geolocation model into memory
+    # Based on given directory(lrworld/lrna) the instance and be used either for world prediction or for us prediction
     def __init__(self):
-        """ Given a directory, loads the saved (pickled and gzipped) geolocation model into memory."""
         model_dir = "./models/lrworld"
         pickle.load = partial(pickle.load, encoding="latin1")
         pickle.Unpickler = partial(pickle.Unpickler, encoding="latin1")
@@ -21,19 +26,15 @@ class MyGeoHandler:
         self.clf = pickle.load(gzip.open(os.path.join(model_dir, "clf.pkl.gz"), "rb"))
         self.model_loaded = True
 
+    # Given a label (str) return the top K important features as a list
     def get_top_k_features(self, label):
-        """
-        given a label (str) return the top k important features as a list
-        """
-        topk_feature_indices = numpy.argsort(self.clf.coef_[label].toarray())[0, -50:].tolist()[::-1]
-        topk_features = [self.vectorizer.features[i] for i in topk_feature_indices]
-        topk_features = [f for f in topk_features if "user_" not in f]
-        return topk_features
+        topK_feature_indices = numpy.argsort(self.clf.coef_[label].toarray())[0, -50:].tolist()[::-1]
+        topK_features = [self.vectorizer.features[i] for i in topK_feature_indices]
+        topK_features = [f for f in topK_features if "user_" not in f]
+        return topK_features
 
+    # Given a label (str) returns a dictionary containing information about the corresponding location.
     def get_location_info(self, label):
-        """
-        given a label (str) returns a dictionary containing information about the corresponding location.
-        """
         lat, lon = self.label_coordinate[label]
         location = self.coordinate_address[(lat, lon)]
         country = location["address"].get("country", "")
@@ -41,18 +42,16 @@ class MyGeoHandler:
         city = location["address"].get("city", "")
         return {"lat": lat, "lon": lon, "country": country, "state": state, "city": city}
 
+    # Given an iterable (e.g. a list) of texts (str/unicode), vectorize them, classify them into one of the regions
+    # using clf (a pre-trained classifier) and returns results a list of dictionaries with the same order as texts
+    # corresponding to each text item with info about the predicted location(s).
+    #
+    # Args:
+    #     texts (list/tuple): a list of strings/unicodes which should be geolocated.
+    #     return_lbl_dist: if True returns the probability distribution over all the classes.
+    # Returns:
+    #     a dictionary containing the predicted geolocation information about text.
     def geo_iterable(self, texts, return_lbl_dist):
-        """
-        given an iterable (e.g. a list) of texts (str/unicode), vectorize them, classify them into one of the regions using clf
-        (a pre-trained classifier) and returns results a list of dictionaries with the same order as texts corresponding
-        to each text item with info about the predicted location(s).
-
-        Args:
-            texts (list/tuple): a list of strings/unicodes which should be geolocated.
-            return_lbl_dist: if True returns the probability distribution over all the classes.
-        Returns:
-            a dictionary containing the predicted geolocation information about text.
-        """
         label_distribution_dict = None
         results = []
         test_samples = texts
@@ -80,22 +79,19 @@ class MyGeoHandler:
             results.append(result)
         return results
 
+    # Given a piece of text (str/unicode), vectorize it, classify it into one of the regions using
+    # clf (a pre-trained classifier) and return a json which has info about the predicted location(s).
+    # If the input is a list of texts it calls geo_iterable.
+    #
+    # Efficiency Note: It is not efficient to call geo(text) several times. The best is to call it with a list of texts
+    # as input.
+    #
+    # Args:
+    #     text (str/unicode): a string which should be geolocated. It can be a piece of text
+    #       or one single Twitter screen name e.g. @user.
+    # Returns:
+    #     a dictionary containing the predicted geolocation information about text.
     def geo(self, text):
-        """
-        given a piece of text (str/unicode), vectorize it, classify it into one of the regions using
-        clf (a pre-trained classifier) and return a json which has info about the predicted location(s).
-        If the input is a list of texts it calls geo_iterable.
-
-        Efficiency Note: It is not efficient to call geo(text) several times. The best is to call it with a list of texts
-        as input.
-
-        Args:
-            text (str/unicode): a string which should be geolocated. It can be a piece of text or one single Twitter screen name e.g. @user.
-            return_lbl_dist: if True returns the probability distribution over all the classes.
-            topk (int): default(1), if higher than 1, return the top K locations ordered by classifier"s confidence.
-        Returns:
-            a dictionary containing the predicted geolocation information about text.
-        """
         label_distribution_dict = None
         topK_label_dist = None
         topK_location_info = {}
@@ -129,15 +125,14 @@ class MyGeoHandler:
         prediction = numpy.argmax(label_distribution)
         confidence = label_distribution[0, prediction]
 
-        top50_features = ", ".join(self.get_top_k_features(prediction))
+        top_features = ", ".join(self.get_top_k_features(prediction))
         location_info = self.get_location_info(prediction)
         if return_lbl_dist:
-            result = {"top50": top50_features, "label_distribution": label_distribution_dict}
+            result = {"top": top_features, "label_distribution": label_distribution_dict}
         elif 1 < topK <= label_distribution.shape[1]:
-            result = {"top50": top50_features, "label_distribution": topK_label_dist}
+            result = {"top": top_features, "label_distribution": topK_label_dist}
             result.update(topK_location_info)
         else:
-            result = {"top50": top50_features, "label_distribution": {prediction: confidence}}
+            result = {"top": top_features, "label_distribution": {prediction: confidence}}
         result.update(location_info)
-        logging.debug(result)
         return result
