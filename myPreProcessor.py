@@ -2,7 +2,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
-import preprocessor as p
+from tweetpreprocessor import preprocessor as p
 
 # Handles the data pre-processing before the analysis
 # Even if this class has generic functions that can be used generally, this class is applied in only in topic analysis
