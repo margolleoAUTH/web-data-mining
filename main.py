@@ -1,4 +1,5 @@
 from typing import Optional, Awaitable, Union
+
 from tweepy import OAuthHandler
 from tweepy import Stream
 from myDBHandler import MyDBHandler
@@ -16,6 +17,20 @@ import threading
 import time
 import asyncio
 import json
+
+# Extra Comments
+#
+# git config --replace-all user.name "margolleoAUTH"
+# git config --replace-all user.email "margolleo@csd.auth.com"
+# git commit --author="margolleoAUTH <margolleo@csd.auth.com>"
+#
+# Database(Atlas):
+# https://cloud.mongodb.com/user?n=%2Fv2%2F5ce5e9a1ff7a252fdb34b8b1&nextHash=%23clusters#/atlas/login
+# margolleo@csd.auth.com
+# 5Kleanthis@
+# Please add your IP to the whitelist in order to connect with the database(We do not have open firewall - 0.0.0.0)
+# preprocessor lib does not work for pip install - needs to be installed manually
+
 
 subscribers = set()
 _self = {}
@@ -52,6 +67,7 @@ class MyWSHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self):
+        print("Web Socket Connection Established")
         subscribers.add(self)
         push_client_info()
 
@@ -108,12 +124,13 @@ class MyTrendsThread(threading.Thread):
                     _self["databaseHandler"].insert_data("geo_sentiment_results", geo_sentiment_results)
 
                     # Topic pre-processing =============================================================================
-                    # Topic data not need it to be stored in the database. It is more efficient to be handled by memory
+                    # Topic pre-processed data do not need to be stored in the database.
+                    # It is more efficient to be handled by memory
                     topic_results.append(_self["preProcessor"].data_pre_processing_extended(it["raw_text"])[0])
                     # ==================================================================================================
 
                 # Code above take care the database limitation and based on the milliseconds/data attribute[timing]
-                # clean the database from the data the have been part of the final results, as we introduce a Real Time
+                # clean the database removing data the have been part of the final results, as we introduce a Real Time
                 #  Application
 
                 _self["databaseHandler"].delete_data("tweets", collection[tweets_analysis_no]["timing"])
@@ -174,13 +191,13 @@ class MyTrendsThread(threading.Thread):
 
 if __name__ == "__main__":
 
-    # Application init [Credentials and Tweeter Handler for Listen Streaming and Manipulate data]
+    # Application loads Credentials for Tweeter API
     auth = OAuthHandler(credentials.CONSUMER_KEY, credentials.CONSUMER_SECRET_KEY)
     auth.set_access_token(credentials.ACCESS_TOKEN, credentials.ACCESS_SECRET_TOKEN)
 
     # Initialization of Controller's Instances
-    # database Handler
-    # Geolocation Handler
+    # Database Handler
+    # Geo-Location Handler
     # Sentiment Analyzer
     # Pre-Processor
     connection_string = "mongodb+srv://marman:5marman@cluster0-cin8u.mongodb.net/twitter_data?retryWrites=true&w=majority"
@@ -197,11 +214,11 @@ if __name__ == "__main__":
     _self["databaseHandler"].delete_all_data("sentiment_trends")
     _self["databaseHandler"].delete_all_data("topic_trends")
 
-    # Controller Start 3 Basic - Pillar Threads
+    # Controller Starts 3 Basic - Pillar Threads
     # Web Socket Thread that handles the communication with the web client and push back the result data
     # The Trends/Results thread, which performs the data fetching from database and basic operations to
     #  define and store the results
-    # The Tweeter's Streaming Thread
+    # The Tweeter's Streaming Thread which fetch data from Twitter API
     thread = MyWSThread()
     thread.start()
     thread = MyTrendsThread()
@@ -220,18 +237,3 @@ if __name__ == "__main__":
         hashTagList = ["Donald Trump", "donald trump"]
         stream = Stream(auth, streamListener)
         stream.filter(track=hashTagList)
-
-# Extra Comments
-#
-# git config --replace-all user.name "margolleoAUTH"
-# git config --replace-all user.email "margolleo@csd.auth.com"
-# git commit --author="margolleoAUTH <margolleo@csd.auth.com>"
-#
-# Database(Atlas):
-# https://cloud.mongodb.com/user?n=%2Fv2%2F5ce5e9a1ff7a252fdb34b8b1&nextHash=%23clusters#/atlas/login
-# margolleo@csd.auth.com
-# 5Kleanthis@
-#
-# https://www.tutorialspoint.com/googlecharts/googlecharts_line_charts.htm
-# https://impythonist.wordpress.com/2015/08/02/build-a-real-time-data-push-engine-using-python-and-rethinkdb/
-# https://stackoverflow.com/questions/53326879/twitter-streaming-api-urllib3-exceptions-protocolerror-connection-broken-i

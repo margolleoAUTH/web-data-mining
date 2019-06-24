@@ -4,8 +4,8 @@ from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 import preprocessor as p
 
-# Handles the data-preprocessor the manipulation of the data before the analysis
-# Even if this class has abstract functions that can be used generally, this class is applied in only in topic analysis
+# Handles the data pre-processing before the analysis
+# Even if this class has generic functions that can be used generally, this class is applied in only in topic analysis
 
 
 class MyPreProcessor:

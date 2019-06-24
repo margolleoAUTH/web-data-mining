@@ -14,7 +14,7 @@ class MyGeoHandler:
 
     # Constructor - Initiates the the appropriate instances regarding the pre-processing, transformations and prediction
     # Given a directory, loads the saved (pickled and gzipped) geolocation model into memory
-    # Based on given directory(lrworld/lrna) the instance and be used either for world prediction or for us prediction
+    # Based on given input-directory(lrworld/lrna) the instance and be used either for world prediction or for us prediction
     def __init__(self):
         model_dir = "./models/lrworld"
         pickle.load = partial(pickle.load, encoding="latin1")

@@ -2,18 +2,19 @@ from tweepy.streaming import StreamListener
 import json
 import time
 
-# Handles the communication with the Tweeter and stores tha data in the database
+# Handles the communication with the Tweeter and stores the raw data in the database
 
 
 class MyStreamHandler(StreamListener):
 
-    # Constructor - Initiates an instance of database Handler
+    # Constructor - Initiates an instance of Database Handler
     # and extends the StreamListener to perform the Tweeter communication
     def __init__(self, databaseHandler):
         super().__init__()
         self.databaseHandler = databaseHandler
 
-    # Event listener that fires when a tweet matches with the filter of Stream instance that Stream Listener has been initiated
+    # Event listener that fires
+    # when a tweet matches with the filter of Stream instance that Stream Listener has been initiated
     def on_data(self, data):
         try:
             # Additional checks: These attributes are here for future purposes.
